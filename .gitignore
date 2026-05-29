@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Runtime artifacts / task IO (may contain task content)
+AGY_DONE*.md
+.agy_dispatch_state.json
+.agy_detached_request.json
+.agy_dispatch_relaunch.log
+.agy_dispatch_locks/
+
+# Secrets — NEVER commit (live OAuth credential blobs)
+agy_snapshots/*.bin
+
+# Keep the snapshots folder + its guide in the repo
+!agy_snapshots/README.md
