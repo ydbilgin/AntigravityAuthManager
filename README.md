@@ -45,7 +45,7 @@ ax 1                    # switch to account #1   (ax 2, ax 3, ...)
 ax work                 # switch by name/prefix
 ax capture <name>       # save the currently logged-in account
 ax login                # agy login (add/refresh an account)
-ax limits [--all]       # show remaining quota
+ax limits [--all]       # show quota (local IDE, or all accounts if IDE is closed)
 ax dispatch task.md --print-timeout 600 [--account <prefix>] [--no-swap]
 ```
 
@@ -53,7 +53,8 @@ ax dispatch task.md --print-timeout 600 [--account <prefix>] [--no-swap]
   full response to `AGY_DONE_<account>.md`. It auto‑selects an account (priority +
   fall‑through on failure) unless you pass `--account` / `--no-swap`.
 - `ax limits` reads the running IDE account's quota by default, or every account
-  with `--all` (needs `npm i -g antigravity-usage`).
+  with `--all` (needs `npm i -g antigravity-usage`). When the IDE is closed it
+  automatically falls back to the all-account view instead of erroring.
 
 ## How accounts work
 

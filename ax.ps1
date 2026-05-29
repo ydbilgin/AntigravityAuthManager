@@ -12,7 +12,7 @@
 #   ax capture <name>       save the currently logged-in account as <name>
 #   ax login                run `agy login` (browser) to add/refresh an account
 #   ax dispatch <file> ...  run a task non-interactively (writes AGY_DONE_<acct>.md)
-#   ax limits [--all]       show remaining quota
+#   ax limits [--all]       show quota (local IDE; falls back to all accounts if IDE closed)
 #   ax help
 
 param(

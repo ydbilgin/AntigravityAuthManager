@@ -6,7 +6,8 @@ Usage:
 
 Default mode reads the running Antigravity IDE language_server on localhost and
 prints the active IDE account's model quota. This uses the same local data the
-Antigravity UI sees and does not spend model quota.
+Antigravity UI sees and does not spend model quota. When no IDE is running it
+falls back to the all-account view (same as --all) instead of failing.
 
 Multi-account mode uses the community `antigravity-usage` CLI as the
 authenticated transport, then renders a RIMA-specific table that tracks the
@@ -471,9 +472,12 @@ def main() -> int:
     try:
         status = fetch_local_status()
     except Exception as exc:
-        print(f"ERROR: failed to fetch local Antigravity quota: {exc}", file=sys.stderr)
-        print("Hint: open Antigravity IDE, then rerun this command.", file=sys.stderr)
-        return 1
+        # No local Antigravity IDE running (or it refused the request). Fall back to
+        # the all-account view instead of failing — that path reads captured account
+        # snapshots and does not need the IDE open (same as `ax limits --all`).
+        print(f"Note: local Antigravity IDE not available ({exc}); showing all-account quota.", file=sys.stderr)
+        print(file=sys.stderr)
+        return run_antigravity_usage(args)
 
     if args.json:
         print(json.dumps(status, indent=2, ensure_ascii=False))
