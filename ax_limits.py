@@ -360,6 +360,57 @@ def render_all_account_table(results: list[dict[str, Any]], include_autocomplete
     print("* = active antigravity-usage account. Use --refresh to bypass cache.")
 
 
+def render_model_table(results: list[dict[str, Any]], needle: str, include_autocomplete: bool) -> None:
+    nl = needle.lower()
+    print(f"Antigravity Usage - All Accounts (model filter: '{needle}')")
+    print()
+    cols = ("Account", "Act", "Model", "Left", "Reset in", "Status")
+    widths = (29, 3, 30, 6, 11, 8)
+    header = " ".join(c.ljust(w) for c, w in zip(cols, widths))
+    print(header)
+    print("-" * len(header))
+    any_match = False
+    labels_seen: set[str] = set()
+    for item in results:
+        email = str(item.get("email") or (item.get("snapshot") or {}).get("email") or "?")
+        act = "*" if item.get("isActive") else ""
+        if item.get("status") != "success":
+            print(" ".join(str(c).ljust(w) for c, w in zip((email[:29], act, "-", "-", "-", str(item.get("status", "failed"))), widths)))
+            continue
+        models = (item.get("snapshot") or {}).get("models") or []
+        for m in models:
+            if not include_autocomplete and m.get("isAutocompleteOnly"):
+                continue
+            labels_seen.add(str(m.get("label", "?")))
+        matched = [m for m in models
+                   if nl in str(m.get("label", "")).lower()
+                   and (include_autocomplete or not m.get("isAutocompleteOnly"))]
+        if not matched:
+            print(" ".join(str(c).ljust(w) for c, w in zip((email[:29], act, f"(no '{needle}')", "-", "-", "-"), widths)))
+            continue
+        first = True
+        for m in matched:
+            any_match = True
+            rem = m.get("remainingPercentage")
+            reset_ms = m.get("timeUntilResetMs")
+            if reset_ms is None:
+                dt = parse_time(m.get("resetTime"))
+                if dt is not None:
+                    reset_ms = max(0, int((dt - datetime.now(dt.tzinfo)).total_seconds() * 1000))
+            status = "OK" if (rem is not None and float(rem) > 0) else "BLOCKED"
+            cells = (email[:29] if first else "", act if first else "",
+                     str(m.get("label", "?"))[:30], pct(rem), reset_in_from_ms(reset_ms), status)
+            print(" ".join(str(c).ljust(w) for c, w in zip(cells, widths)))
+            first = False
+    print()
+    if not any_match and labels_seen:
+        print(f"No model matched '{needle}'. Available models:")
+        for lbl in sorted(labels_seen):
+            print(f"  {lbl}")
+    else:
+        print(f"* = active account. Models matching '{needle}'. Add --all-models to include autocomplete-only.")
+
+
 def run_antigravity_usage(args: argparse.Namespace) -> int:
     exe = shutil.which("antigravity-usage.cmd") if os.name == "nt" else shutil.which("antigravity-usage")
     if not exe:
@@ -393,7 +444,11 @@ def run_antigravity_usage(args: argparse.Namespace) -> int:
         print(f"Captured snapshots: {', '.join(list_captured_accounts())}")
     elif result.returncode == 0 and not args.json:
         try:
-            render_all_account_table(extract_json_array(result.stdout), args.all_models)
+            data = extract_json_array(result.stdout)
+            if args.model:
+                render_model_table(data, args.model, args.all_models)
+            else:
+                render_all_account_table(data, args.all_models)
         except Exception as exc:
             print(result.stdout, end="")
             print(f"ERROR: failed to render RIMA quota table: {exc}", file=sys.stderr)
@@ -407,6 +462,7 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", help="Print JSON")
     parser.add_argument("--refresh", action="store_true", help="Pass --refresh to antigravity-usage in --all mode")
     parser.add_argument("--all-models", action="store_true", help="Include autocomplete-only models in --all summary")
+    parser.add_argument("--model", metavar="NAME", help="Show only models whose name contains NAME (e.g. --model flash). Works with or without --all.")
     args = parser.parse_args()
 
     if args.all:
@@ -424,6 +480,9 @@ def main() -> int:
         return 0
 
     account, rows = rows_from_status(status)
+    if args.model:
+        nl = args.model.lower()
+        rows = [r for r in rows if nl in r.get("model", "").lower()]
     print_table(account, rows)
     return 0
 
