@@ -1,12 +1,12 @@
 #!/usr/bin/env pwsh
-# agychange.ps1 — switch agy CLI active Google account by restoring its cached OAuth blob
+# ax_switch.ps1 — switch agy CLI active Google account by restoring its cached OAuth blob
 #   into Windows Credential Manager (LegacyGeneric:target=gemini:antigravity).
 #
 # Usage:
-#   .\agychange.ps1                       # list captured accounts + active
-#   .\agychange.ps1 <email-prefix>        # switch (e.g. 'alice' or full email)
-#   .\agychange.ps1 -List                 # explicit list
-#   .\agychange.ps1 -Active               # print current active email only
+#   .\ax_switch.ps1                       # list captured accounts + active
+#   .\ax_switch.ps1 <email-prefix>        # switch (e.g. 'alice' or full email)
+#   .\ax_switch.ps1 -List                 # explicit list
+#   .\ax_switch.ps1 -Active               # print current active email only
 #
 # Blobs live in: agy_snapshots\cred_blob_<localpart>.bin
 
@@ -15,7 +15,8 @@ param(
   [Parameter(Position = 0)]
   [string]$Account,
   [switch]$List,
-  [switch]$Active
+  [switch]$Active,
+  [string]$Capture
 )
 
 $ErrorActionPreference = 'Stop'
@@ -159,7 +160,32 @@ function Invoke-Switch([string]$acct) {
   }
 }
 
+function Save-CurrentBlob([string]$name) {
+  if (-not (Test-Path $snapDir)) { New-Item -ItemType Directory -Force -Path $snapDir | Out-Null }
+  $credPtr = [IntPtr]::Zero
+  if (-not $api::CredRead($target, 1, 0, [ref]$credPtr)) {
+    Write-Host "[FAIL] No Antigravity credential found. Run 'agy login' first." -ForegroundColor Red
+    exit 1
+  }
+  try {
+    $blobSize = [System.Runtime.InteropServices.Marshal]::ReadInt32($credPtr, 32)
+    $blobPtr  = [System.Runtime.InteropServices.Marshal]::ReadIntPtr($credPtr, 40)
+    if ($blobSize -le 0 -or $blobSize -gt 200000) { Write-Host "[FAIL] Unexpected blob size: $blobSize" -ForegroundColor Red; exit 2 }
+    $bytes = New-Object byte[] $blobSize
+    [System.Runtime.InteropServices.Marshal]::Copy($blobPtr, $bytes, 0, $blobSize)
+    $out = Join-Path $snapDir ("cred_blob_{0}.bin" -f $name)
+    [System.IO.File]::WriteAllBytes($out, $bytes)
+    Write-Host "[OK] Captured current account -> $out ($blobSize bytes)" -ForegroundColor Green
+  } finally {
+    [void]$api::CredFree($credPtr)
+  }
+}
+
 # --- main ---
+if ($Capture) {
+  Save-CurrentBlob -name $Capture
+  exit 0
+}
 if ($Active) {
   $e = Get-ActiveEmail
   if ($e) { Write-Output $e } else { Write-Output "(unknown)" }

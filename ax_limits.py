@@ -1,8 +1,8 @@
-"""agy_limits.py - Antigravity quota display for RIMA.
+"""ax_limits.py - Antigravity quota display for RIMA.
 
 Usage:
-  python STAGING/agy_limits.py
-  python STAGING/agy_limits.py --all [--refresh]
+  python STAGING/ax_limits.py
+  python STAGING/ax_limits.py --all [--refresh]
 
 Default mode reads the running Antigravity IDE language_server on localhost and
 prints the active IDE account's model quota. This uses the same local data the
@@ -33,7 +33,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent
 SNAP_DIR = ROOT / "agy_snapshots"
-STATE_FILE = ROOT / ".agy_dispatch_state.json"
+STATE_FILE = ROOT / ".ax_dispatch_state.json"
 STATUS_ENDPOINT = "/exa.language_server_pb.LanguageServerService/GetUserStatus"
 SHORT_WINDOW_MAX_MS = 6 * 60 * 60 * 1000
 

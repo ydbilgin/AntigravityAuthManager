@@ -5,7 +5,7 @@ __pycache__/
 # Runtime artifacts / task IO (may contain task content)
 AGY_DONE*.md
 .agy_dispatch_state.json
-.agy_detached_request.json
+.ax_detached_request.json
 .agy_dispatch_relaunch.log
 .agy_dispatch_locks/
 

@@ -1,10 +1,10 @@
 @echo off
-REM agy_dispatch.cmd — Windows wrapper that bypasses python.exe console flash.
+REM ax_dispatch.cmd — Windows wrapper that bypasses python.exe console flash.
 REM
-REM USE THIS instead of `python agy_dispatch.py ...` when invoking from bash/CMD.
+REM USE THIS instead of `python ax_dispatch.py ...` when invoking from bash/CMD.
 REM
 REM Reasoning: `python.exe` is a console-subsystem binary. Bash/CMD invocation
-REM briefly flashes a conhost.exe window before agy_dispatch.py self-relaunches
+REM briefly flashes a conhost.exe window before ax_dispatch.py self-relaunches
 REM under pythonw.exe. This wrapper jumps straight to pythonw.exe (GUI subsystem,
 REM no console allocation), eliminating the parent flash.
 REM
@@ -13,10 +13,10 @@ REM and cannot be fully eliminated without Session 0 isolation (which breaks
 REM UnityMCP connectivity). This wrapper minimizes flash to that single source.
 REM
 REM Usage from bash:
-REM   cmd //c "F:\\Antigravity Projeler\\2d roguelite\\RIMA\\agy_dispatch.cmd" --task-file STAGING/foo.md --account laurethayday
+REM   cmd //c "F:\\Antigravity Projeler\\2d roguelite\\RIMA\\ax_dispatch.cmd" --task-file STAGING/foo.md --account laurethayday
 REM
 REM Or from PowerShell:
-REM   & "F:\Antigravity Projeler\2d roguelite\RIMA\agy_dispatch.cmd" --task-file STAGING/foo.md
+REM   & "F:\Antigravity Projeler\2d roguelite\RIMA\ax_dispatch.cmd" --task-file STAGING/foo.md
 REM
 REM IMPORTANT: this file MUST be saved with CRLF line endings (Windows batch
 REM requirement). LF-only causes cmd to swallow the first char of each line
@@ -40,11 +40,11 @@ echo ERROR: pythonw.exe not found in any known location. Falling back to python.
 set "PYTHONW=python"
 
 :found
-REM Mark as already-relaunched so agy_dispatch.py skips its own self-relaunch step.
+REM Mark as already-relaunched so ax_dispatch.py skips its own self-relaunch step.
 set "AGY_DISPATCH_RELAUNCHED=1"
 
-REM Launch pythonw with the agy_dispatch.py script in the same directory.
-"%PYTHONW%" "%~dp0agy_dispatch.py" %*
+REM Launch pythonw with the ax_dispatch.py script in the same directory.
+"%PYTHONW%" "%~dp0ax_dispatch.py" %*
 
 endlocal
 exit /b %ERRORLEVEL%

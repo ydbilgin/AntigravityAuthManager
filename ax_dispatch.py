@@ -1,4 +1,4 @@
-"""agy_dispatch.py — Antigravity (agy CLI) dispatcher with ConPTY wrapper.
+"""ax_dispatch.py — Antigravity (agy CLI) dispatcher with ConPTY wrapper.
 
 Sibling of cx_dispatch.py for Codex. Solves the Windows agy --print stdio
 capture bug by allocating a pseudo-TTY via pywinpty: agy's text_drip
@@ -10,16 +10,16 @@ Required: pip install pywinpty
 Verified prerequisite: $env:TERM='xterm-256color' (set internally)
 
 Usage:
-  python agy_dispatch.py --task-file tasks/foo.md [--account <prefix>]
+  python ax_dispatch.py --task-file tasks/foo.md [--account <prefix>]
                          [--print-timeout 120] [--no-swap]
 
   # canary self-test (verifies UnityMCP connectivity)
-  python agy_dispatch.py --test
+  python ax_dispatch.py --test
 
 Account selection:
   --account <prefix>   Force a specific captured account (substring match)
   default              Round-robin via STAGING/agy_snapshots/cred_blob_*.bin
-                       state in .agy_dispatch_state.json, locked accounts skipped
+                       state in .ax_dispatch_state.json, locked accounts skipped
 
 Exit codes:
   0  Got a non-empty response, agy exited cleanly
@@ -36,7 +36,7 @@ import argparse
 
 # --- Windows window suppression (must run BEFORE pywinpty / subprocess imports) ---
 #
-# Problem: `python agy_dispatch.py` from Bash tool runs under python.exe which is
+# Problem: `python ax_dispatch.py` from Bash tool runs under python.exe which is
 # a CONSOLE-subsystem binary. Windows briefly attaches a conhost.exe window when
 # the process starts, and pywinpty/ConPTY's CreatePseudoConsole can also trigger
 # a brief flash on the active monitor — stealing focus mid-game.
@@ -53,12 +53,12 @@ import argparse
 if sys.platform == "win32":
     # Debug log so we can verify whether pythonw self-relaunch is actually happening
     try:
-        _dbg = Path(__file__).parent / ".agy_dispatch_relaunch.log" if False else None
+        _dbg = Path(__file__).parent / ".ax_dispatch_relaunch.log" if False else None
     except Exception:
         _dbg = None
     try:
         import time as _t
-        _log_path = os.path.join(os.path.dirname(__file__), ".agy_dispatch_relaunch.log")
+        _log_path = os.path.join(os.path.dirname(__file__), ".ax_dispatch_relaunch.log")
         with open(_log_path, "a", encoding="utf-8") as _f:
             _f.write(f"[{_t.strftime('%H:%M:%S')}] exec={sys.executable} relaunched={os.environ.get('AGY_DISPATCH_RELAUNCHED', '0')} argv={sys.argv[:3]}\n")
     except Exception:
@@ -219,9 +219,9 @@ if sys.platform == "win32":
 ROOT = Path(__file__).parent.resolve()
 AGY_EXE = (os.environ.get("AGY_EXE") or __import__("shutil").which("agy") or __import__("shutil").which("agy.exe") or os.path.expandvars(r"%LOCALAPPDATA%\agy\bin\agy.exe"))
 SNAP_DIR = ROOT / "agy_snapshots"
-SWITCHER = ROOT / "agychange.ps1"
-LOCK_DIR = ROOT / ".agy_dispatch_locks"
-STATE_FILE = ROOT / ".agy_dispatch_state.json"
+SWITCHER = ROOT / "ax_switch.ps1"
+LOCK_DIR = ROOT / ".ax_dispatch_locks"
+STATE_FILE = ROOT / ".ax_dispatch_state.json"
 LOCK_STALE_SECS = 7200  # 2h — auto-release ghost locks
 
 # Fixed account priority (user-set 2026-05-28). Dispatch tries these in order; on a
@@ -332,7 +332,7 @@ def _hidden_startupinfo():
 
 
 def swap_account(account: str) -> bool:
-    """Restore the account's OAuth blob via agychange.ps1. Returns True on success."""
+    """Restore the account's OAuth blob via ax_switch.ps1. Returns True on success."""
     if not SWITCHER.exists():
         print(f"ERROR: switcher script not found: {SWITCHER}", file=sys.stderr)
         return False
@@ -346,10 +346,10 @@ def swap_account(account: str) -> bool:
             startupinfo=_hidden_startupinfo(),  # STARTUPINFO SW_HIDE belt-and-suspenders
         )
     except subprocess.TimeoutExpired:
-        print("ERROR: agychange.ps1 timeout after 15s", file=sys.stderr)
+        print("ERROR: ax_switch.ps1 timeout after 15s", file=sys.stderr)
         return False
     if r.returncode != 0:
-        print(f"WARN: agychange.ps1 exit {r.returncode}: {r.stderr.strip()}", file=sys.stderr)
+        print(f"WARN: ax_switch.ps1 exit {r.returncode}: {r.stderr.strip()}", file=sys.stderr)
         return False
     # The "[OK] Swapped" line is the signal of success
     return "[OK] Swapped" in (r.stdout or "")
@@ -468,7 +468,7 @@ def run_agy_via_pty(prompt: str, print_timeout: int) -> tuple[str, int | None]:
     raw = "".join(chunks)
     clean = strip_ansi(raw)
     if timed_out:
-        clean += f"\n[agy_dispatch] HARD_TIMEOUT after {print_timeout + 30}s\n"
+        clean += f"\n[ax_dispatch] HARD_TIMEOUT after {print_timeout + 30}s\n"
     return clean, exit_code
 
 
@@ -492,7 +492,7 @@ def main() -> int:
     p.add_argument("--print-timeout", type=int, default=120,
                    help="agy --print-timeout in seconds (default 120)")
     p.add_argument("--no-swap", action="store_true",
-                   help="Skip agychange.ps1 swap (use whatever's currently active)")
+                   help="Skip ax_switch.ps1 swap (use whatever's currently active)")
     p.add_argument("--list-accounts", action="store_true",
                    help="Print available accounts and exit")
     args = p.parse_args()
